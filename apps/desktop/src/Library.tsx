@@ -345,8 +345,7 @@ function ModelDetail({
           </button>
           <button
             onClick={async () => {
-              await run("remove_model", { id: m.id });
-              close();
+              if (await run("remove_model", { id: m.id })) close();
             }}
           >
             {t("remove")}
@@ -355,8 +354,7 @@ function ModelDetail({
             <button
               className="danger"
               onClick={async () => {
-                await run("delete_model", { id: m.id });
-                close();
+                if (await run("delete_model", { id: m.id })) close();
               }}
             >
               {t("delete")}

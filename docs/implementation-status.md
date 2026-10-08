@@ -86,3 +86,12 @@ Host: Windows 11 Pro x64 build 26200, WebView2 154.0.4258.62. See [acceptance re
 - Code inspection identified cancellation reported as successful deletion in the frontend; preservation is validated, but result messaging needs a separate fix.
 
 Final local acceptance checks: 27 workspace Rust tests passed (one separate opt-in live test ignored); targeted core clippy and workspace formatting passed. The final native runner passed all three phases with normal shutdown and all eight dialog cases. Frontend source was unchanged in this follow-up.
+
+## Follow-up: accurate cancellation and failure feedback (2026-10-08)
+
+- Managed-delete No returns false; confirmed completion returns true. Rescan No returns null instead of an error.
+- The action runner distinguishes cancellation from completed void commands and clears stale notices when a new action starts. Detail dialogs stay open on cancellation/error; unsuccessful account connection retains editable input.
+- Native acceptance now has 13 scenarios. Added rescan No/Yes, invalid account input retention, diagnostic-save cancellation and failed managed deletion followed by retry. Delete cases use the real UI and assert success/error toast and modal behavior as well as unchanged/deleted bytes.
+- Final runner `modelshelf-test-FPXqZe` passed all 13 cases and all three phases with normal native closure. The cancellation screenshot confirms the detail remains open without a success notice.
+- 27 workspace Rust tests, 6 Vitest tests, TypeScript, ESLint, workspace clippy, bundled debug build and formatting passed. The Impeccable mechanical detector reported no findings in changed frontend files.
+- Clean OS/installer and physical disk matrix remains pending as documented; no new release installer is claimed.

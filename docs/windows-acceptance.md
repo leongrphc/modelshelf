@@ -63,9 +63,28 @@ Use disposable VMs and volumes for these cases. Record installer hash, Windows b
 runtime version, steps, expected/observed behavior and retained logs for each run.
 Do not check off the whole P0/2 milestone based only on the automated cases above.
 
-## Findings needing follow-up
+## Follow-up: cancellation and error feedback
 
-Code inspection found that declining native managed deletion returns `Ok(())`, and the
-frontend treats it as a successful operation. Files are preserved, but the success message
-can mislead the user. Cancellation must be represented separately from completed deletion
-before the operation-status acceptance criterion is considered satisfied.
+Managed deletion now returns `false` on native No and `true` only after completion.
+Rescan cancellation returns `null`; save-dialog cancellation also remains `null`.
+The frontend treats these as cancellation, clears stale notices when starting an action,
+and shows success only for completed operations. Detail dialogs remain open after
+cancellation or failure, and failed account input remains editable.
+
+Additional regression cases exercise rescan No/Yes, invalid account input, cancelled
+diagnostic save, and unavailable-directory deletion followed by successful retry.
+The managed-delete cases now click the actual UI button and verify notification and
+modal behavior as well as filesystem contents.
+
+Final follow-up run: `modelshelf-test-FPXqZe`; all **13** native scenarios and normal
+window closure passed. Additional expected/observed cases:
+
+| Scenario                                     | Expected                                           | Observed |
+| -------------------------------------------- | -------------------------------------------------- | -------- |
+| Rescan No                                    | Keep detail/data; no success or error toast        | Passed   |
+| Rescan Yes                                   | Refresh files and show success                     | Passed   |
+| Invalid account input                        | Show error; retain editable input                  | Passed   |
+| Diagnostic-save cancellation                 | Clear stale notice; no success/error               | Passed   |
+| Delete unavailable directory, restore, retry | Show error and retain detail/index; retry succeeds | Passed   |
+
+The existing delete No/Yes cases additionally verify modal and toast behavior through UI buttons.

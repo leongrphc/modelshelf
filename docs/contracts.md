@@ -29,8 +29,10 @@ Tauri commands frontend invokes:
 - create_download({repo,revision,selected:string[],destination:string}) -> DownloadJob (backend refetch pinned metadata)
 - download_action({id,action}) -> void
 - remove_model({id}) -> void (index only)
-- delete_model({id}) -> void (native confirmation)
+- delete_model({id}) -> boolean (false when native confirmation is declined; true only after deletion completes)
 - verify_model({id}) -> Model
+- recheck_model({id}) -> Model
+- rescan_model({id}) -> Model|null (null when native confirmation is declined)
 - update_model({id,favorite,notes,tags}) -> void
 - open_model_folder({id}) -> void
 - save_settings({settings}) -> void
@@ -42,3 +44,5 @@ Tauri commands frontend invokes:
 - export_diagnostics() -> string|null (native save dialog, excludes credentials/paths)
   Event: state-changed (invalidate snapshot; emitted every 1s when jobs change).
   Frontend must show desktop-required error if opened in browser; no mock production state.
+
+Frontend action runner: successful void commands normalize to `true`; successful value commands retain their payload. Cancellation and errors return `undefined` to callers. Native picker/save/rescan nulls and managed-delete false are cancellation, with no success/error toast. Real errors show an alert. Callers close detail dialogs or clear account inputs only after success. Starting a new action clears the previous toast.

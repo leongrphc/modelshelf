@@ -165,7 +165,7 @@ async fn confirm(title: &str, message: &str) -> bool {
         == rfd::MessageDialogResult::Yes
 }
 #[tauri::command]
-pub async fn delete_model(state: State<'_, AppState>, id: String) -> Result<()> {
+pub async fn delete_model(state: State<'_, AppState>, id: String) -> Result<bool> {
     let model = state
         .db
         .models()
@@ -176,9 +176,10 @@ pub async fn delete_model(state: State<'_, AppState>, id: String) -> Result<()> 
     if model.ownership != "managed" {
         return Err("External files cannot be deleted by ModelShelf".into());
     }
-    if !confirm("Permanently delete owned model files?", &format!("Delete {} at {}? This cannot be undone. Only files recorded as owned by ModelShelf may be deleted.", model.display_name, model.path)).await { return Ok(()) }
+    if !confirm("Permanently delete owned model files?", &format!("Delete {} at {}? This cannot be undone. Only files recorded as owned by ModelShelf may be deleted.", model.display_name, model.path)).await { return Ok(false) }
     let db = state.db.clone();
-    blocking(move || storage::delete_managed(&db, &id, true)).await
+    blocking(move || storage::delete_managed(&db, &id, true)).await?;
+    Ok(true)
 }
 #[tauri::command]
 pub async fn verify_model(state: State<'_, AppState>, id: String) -> Result<Model> {
@@ -191,10 +192,10 @@ pub async fn recheck_model(state: State<'_, AppState>, id: String) -> Result<Mod
     blocking(move || storage::recheck_model(&db, &id)).await
 }
 #[tauri::command]
-pub async fn rescan_model(state: State<'_, AppState>, id: String) -> Result<Model> {
-    if !confirm("Rescan indexed folder?", "Read file names and sizes again? This may take time for large folders. Original files remain untouched.").await { return Err("Rescan cancelled".into()) }
+pub async fn rescan_model(state: State<'_, AppState>, id: String) -> Result<Option<Model>> {
+    if !confirm("Rescan indexed folder?", "Read file names and sizes again? This may take time for large folders. Original files remain untouched.").await { return Ok(None) }
     let db = state.db.clone();
-    blocking(move || storage::rescan_model(&db, &id)).await
+    blocking(move || storage::rescan_model(&db, &id).map(Some)).await
 }
 #[tauri::command]
 pub async fn update_model(

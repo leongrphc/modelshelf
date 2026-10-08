@@ -165,4 +165,4 @@ Her tamamlanan işten sonra bu dosyayı ve [implementation-status.md](implementa
 
 Windows hedefi için `cargo tree` bu iki uyarılı paketi bağımlılık ağacında göstermedi; diğer platformlara geçmeden önce değerlendirme gerekiyor.
 
-- Kabul testlerinde işlem sonucu bildirimi için takip ihtiyacı: silme onayında Hayır seçilmesi backend tarafından başarılı sonuç olarak dönüyor; arayüz yanıltıcı başarı bildirimi gösterebilir. Dosyalar korunuyor. İptal/başarı sonuçları ayrılmalı.
+- İşlem sonucu bildirimi düzeltildi: silme ve yeniden taramada Hayır, tanılama kaydında İptal artık başarı/hata bildirimi üretmiyor. Hata veya iptalde detay penceresi, başarısız hesap bağlantısında girilen bilgi korunuyor.

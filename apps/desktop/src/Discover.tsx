@@ -13,6 +13,7 @@ import type { Repository, Snapshot } from "./types";
 import type { T } from "./i18n";
 import { bytes, extension, quantization } from "./utils";
 import { FileTree } from "./FileTree";
+// Resolves to the payload (true for void success), or undefined on cancel/error.
 export type Run = (
   name: string,
   args?: Record<string, unknown>,

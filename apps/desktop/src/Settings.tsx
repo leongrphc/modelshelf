@@ -267,9 +267,10 @@ export function SettingsPage({
           <button
             disabled={!token}
             onClick={async () => {
-              await run("connect_account", { token });
-              setToken("");
-              void account.refetch();
+              if (await run("connect_account", { token })) {
+                setToken("");
+                void account.refetch();
+              }
             }}
           >
             {t("connect")}

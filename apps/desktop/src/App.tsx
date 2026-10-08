@@ -95,15 +95,29 @@ function Workspace() {
     return () => clearTimeout(timer);
   }, [message]);
   const run: Run = async (name, args) => {
+    setMessage(null);
     setBusy((n) => n + 1);
     try {
       if (name === "clipboard_error") throw new Error(String(args?.error));
       const result = await command(name, args);
+      const cancelled =
+        (name === "delete_model" && result === false) ||
+        ([
+          "choose_directory",
+          "import_model",
+          "add_location",
+          "export_diagnostics",
+          "rescan_model",
+        ].includes(name) &&
+          result === null);
+      if (cancelled) return undefined;
       await cache.invalidateQueries({ queryKey: ["snapshot"] });
       if (name === "create_download") go("downloads");
       if (!["choose_directory", "import_model", "add_location"].includes(name))
         setMessage({ text: t("success"), error: false });
-      return result;
+      // Successful void commands serialize as null; undefined is reserved for
+      // cancellation/failure so callers retain forms and dialogs in those cases.
+      return result ?? true;
     } catch (e) {
       setMessage({ text: String(e), error: true });
       return undefined;

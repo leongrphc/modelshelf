@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile, realpath } from "node:fs/promises";
+import { mkdir, readFile, writeFile, realpath, rename } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
@@ -69,6 +69,10 @@ export async function windowsAcceptance(page) {
       { command, args },
     );
   const snapshot = () => invoke("snapshot");
+  async function settledWithoutNotification() {
+    await page.locator('.content[aria-busy="false"]').waitFor();
+    assert.equal(await page.locator(".toast").count(), 0);
+  }
   async function waitSnapshot(predicate) {
     const deadline = Date.now() + 30000;
     do {
@@ -167,6 +171,70 @@ export async function windowsAcceptance(page) {
     },
   );
   await scenario(
+    "Rescan declined feedback",
+    "No keeps detail open with no success or error notice",
+    async () => {
+      await page
+        .getByRole("button", { name: path.basename(fixtures), exact: true })
+        .click();
+      const before = (await snapshot()).models;
+      await page
+        .getByRole("button", { name: "Rescan files", exact: true })
+        .click();
+      await dialog("no");
+      await settledWithoutNotification();
+      assert.equal(await page.getByRole("dialog").count(), 1);
+      assert.deepEqual((await snapshot()).models, before);
+      await page.keyboard.press("Escape");
+    },
+  );
+  await scenario(
+    "Rescan confirmed feedback",
+    "Confirmed rescan refreshes files and reports success",
+    async () => {
+      await page
+        .getByRole("button", { name: path.basename(fixtures), exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Rescan files", exact: true })
+        .click();
+      await dialog("yes");
+      await page.locator('.toast[role="status"]').waitFor();
+      assert.equal((await waitModel(path.basename(fixtures))).files.length, 1);
+      await page.keyboard.press("Escape");
+    },
+  );
+  await scenario(
+    "Failed account input retained",
+    "Invalid input shows error while preserving the entered token",
+    async () => {
+      await page.getByRole("button", { name: "Settings", exact: true }).click();
+      const token = page.locator('input[type="password"]');
+      await token.fill("invalid-test-token");
+      await page
+        .getByRole("button", { name: "Connect account", exact: true })
+        .click();
+      await page.locator('.toast[role="alert"]').waitFor();
+      assert.equal(await token.inputValue(), "invalid-test-token");
+      assert.equal(await page.locator('.toast[role="status"]').count(), 0);
+    },
+  );
+  await scenario(
+    "Diagnostics save cancelled feedback",
+    "Cancelling clears stale notice and shows no success or error",
+    async () => {
+      await page
+        .getByRole("button", { name: "Export diagnostics", exact: true })
+        .click();
+      await dialog("cancel");
+      await settledWithoutNotification();
+      await page
+        .getByRole("button", { name: "My Library", exact: true })
+        .first()
+        .click();
+    },
+  );
+  await scenario(
     "File picker cancellation",
     "Cancelled picker does not change library",
     async () => {
@@ -196,23 +264,56 @@ export async function windowsAcceptance(page) {
   await writeFile(keep, "preserve me");
   await scenario(
     "Permanent deletion declined",
-    "Native No preserves managed files and library entry",
+    "Native No preserves managed files, library entry and detail without success notice",
     async () => {
       const before = await readFile(managed.files[0].path);
-      const operation = invoke("delete_model", { id: managed.id });
+      await page
+        .getByRole("button", { name: managed.display_name, exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Delete owned files", exact: true })
+        .click();
       await dialog("no");
-      await operation;
+      await settledWithoutNotification();
+      assert.equal(await page.getByRole("dialog").count(), 1);
+      await page.screenshot({
+        path: path.join(root, "screenshots", "delete-cancelled.png"),
+      });
       assert.deepEqual(await readFile(managed.files[0].path), before);
       assert((await snapshot()).models.some((m) => m.id === managed.id));
+    },
+  );
+  await scenario(
+    "Failed deletion feedback",
+    "Unavailable directory shows an error, retains detail and permits retry",
+    async () => {
+      const moved = managed.path + "-unavailable";
+      await rename(managed.path, moved);
+      try {
+        await page
+          .getByRole("button", { name: "Delete owned files", exact: true })
+          .click();
+        await dialog("yes");
+        await page.locator('.toast[role="alert"]').waitFor();
+        await page.locator('.content[aria-busy="false"]').waitFor();
+        assert.equal(await page.getByRole("dialog").count(), 1);
+        assert.equal(await page.locator('.toast[role="status"]').count(), 0);
+        assert((await snapshot()).models.some((m) => m.id === managed.id));
+      } finally {
+        await rename(moved, managed.path);
+      }
     },
   );
   await scenario(
     "Permanent deletion confirmed",
     "Native Yes deletes recorded files only, preserving unrelated file",
     async () => {
-      const operation = invoke("delete_model", { id: managed.id });
+      await page
+        .getByRole("button", { name: "Delete owned files", exact: true })
+        .click();
       await dialog("yes");
-      await operation;
+      await page.locator('.toast[role="status"]').waitFor();
+      await page.getByRole("dialog").waitFor({ state: "detached" });
       for (const file of managed.files)
         await assert.rejects(readFile(file.path), { code: "ENOENT" });
       assert.equal(await readFile(keep, "utf8"), "preserve me");
