@@ -2,6 +2,16 @@
 
 **Your AI Models. One Place.**
 
+[![Windows CI](https://github.com/leongrphc/modelshelf/actions/workflows/ci.yml/badge.svg)](https://github.com/leongrphc/modelshelf/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Open-source model management for your desktop.** Discover models, choose the files you need,
+and keep your local collection organized. Built with Rust, Tauri and React.
+
+[Report a bug](https://github.com/leongrphc/modelshelf/issues/new?template=bug.yml) ·
+[Request a feature](https://github.com/leongrphc/modelshelf/issues/new?template=feature.yml) ·
+[Contribute](CONTRIBUTING.md) · [Roadmap](docs/next-steps.md)
+
 A local-first desktop application for discovering Hugging Face models, selecting repository files,
 downloading them into your own folders, and organizing existing model files without moving them.
 
@@ -89,7 +99,7 @@ Read [security design](docs/security.md) and [vulnerability reporting](SECURITY.
 - README is displayed as plain text. The UI does not infer runtime compatibility or automatically select dependencies.
 - Launch-at-login, copy-on-import, signed updates, Linux/macOS installers and native Xet acceleration are deferred.
 - Provider errors and native confirmation dialogs currently use English; primary navigation and page controls support Turkish.
-- A maintainer must set the public repository, issue and security contact URLs before publication.
+- Windows acceptance testing and signed distribution remain in progress.
 
 ## Contribute
 
