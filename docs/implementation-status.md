@@ -61,3 +61,16 @@ This keeps per-job updates transactional for the MVP. Large-catalog indexing/nor
 
 No claim is made that every item in the broader product vision is complete. The delivered scope is a functioning MVP
 with tested safety/recovery mechanisms and explicitly recorded release limitations.
+
+## Follow-up: public repository and profile isolation (2026-10-08)
+
+- Public source: https://github.com/leongrphc/modelshelf. Initial MVP snapshot: `a3c79ea`.
+- Repository description/topics and private vulnerability reporting configured. README includes CI, MIT, issue and contribution links.
+- Production data/credentials retain their existing identity; debug builds use a separate development identity. No production data migration occurs.
+- Test mode requires an explicit temporary directory, isolates WebView storage and never opens the OS credential store. Four profile tests cover defaults, invalid configurations, memory-only credentials and unchanged production/development database fixtures.
+- Native automation launches its own disposable profile, verifies runtime identity before interactions, keeps screenshots/downloads there, and restarts only its own process. Search, download, library, integrity, restart, Turkish and themes passed with no page errors while the existing production app remained open.
+- Initial CI failures exposed Windows checkout line endings and missing audit check permission; both corrected in focused commits. Full remote validation is pending.
+- Rust audit reported `proc-macro-error 1.0.4` unmaintained (`RUSTSEC-2024-0370`) and `glib 0.18.5` unsound iterator implementations (`RUSTSEC-2024-0429`). Warnings remain visible; dependency remediation has not been performed.
+- This follow-up does not claim a new release installer or the broader Windows acceptance matrix.
+
+Follow-up local checks: 23 Rust tests and 6 Vitest tests passed; TypeScript, ESLint, workspace clippy with warnings denied, formatting and bundled debug build passed. `cargo tree --target x86_64-pc-windows-msvc -i` found neither warned crate in the Windows dependency tree; other-platform remediation remains pending.

@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod profile;
 mod system;
 
 use modelshelf_core::Database;
@@ -14,12 +15,22 @@ pub struct AppState {
     downloads: Arc<DownloadManager>,
     token: Mutex<Option<String>>,
     hardware: serde_json::Value,
+    profile: profile::RuntimeProfile,
 }
 
 fn main() {
     tracing_subscriber::fmt()
         .with_env_filter("modelshelf=info")
         .init();
+    let profile =
+        profile::RuntimeProfile::from_environment().expect("Invalid ModelShelf runtime profile");
+    let mut context = tauri::generate_context!();
+    context.config_mut().identifier = profile.identifier().into();
+    if profile.kind == "test" {
+        for window in &mut context.config_mut().app.windows {
+            window.create = false;
+        }
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             if let Some(window) = app.get_webview_window("main") {
@@ -27,8 +38,10 @@ fn main() {
             }
         }))
         .plugin(tauri_plugin_notification::init())
-        .setup(|app| {
-            let data = app.path().app_data_dir()?;
+        .setup(move |app| {
+            let mut profile = profile.clone();
+            let data = profile.data_directory_for(app.path().app_data_dir()?);
+            profile.data_directory = Some(data.clone());
             std::fs::create_dir_all(&data)?;
             let db = Arc::new(Database::open(&data.join("modelshelf.db"))?);
             let mut settings = db.settings()?;
@@ -42,10 +55,13 @@ fn main() {
                     kind: "managed".into(),
                 })?;
             }
-            let token = match commands::credential()?.get_password() {
-                Ok(token) => Some(token),
-                Err(keyring::Error::NoEntry) => None,
-                Err(_) => {
+            let token = match profile
+                .credential()
+                .map(|entry| entry.and_then(|e| e.get_password()))
+            {
+                Some(Ok(token)) => Some(token),
+                None | Some(Err(keyring::Error::NoEntry)) => None,
+                Some(Err(_)) => {
                     tracing::warn!(
                         "OS credential store could not be read; connect account again in Settings"
                     );
@@ -59,7 +75,15 @@ fn main() {
                 downloads: downloads.clone(),
                 token: Mutex::new(token),
                 hardware: system::hardware(),
+                profile: profile.clone(),
             });
+            if profile.kind == "test" {
+                for window in &app.config().app.windows {
+                    tauri::WebviewWindowBuilder::from_config(app, window)?
+                        .data_directory(data.join("webview"))
+                        .build()?;
+                }
+            }
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 downloads.start();
@@ -105,6 +129,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::runtime_profile,
             commands::snapshot,
             commands::search_models,
             commands::repository_details,
@@ -127,6 +152,6 @@ fn main() {
             commands::open_repository,
             commands::export_diagnostics
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("ModelShelf could not start");
 }

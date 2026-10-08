@@ -14,8 +14,16 @@ pnpm dev
 ```
 
 The Vite server alone cannot manage files; launch through Tauri to exercise native commands.
-The app initializes its SQLite database in the OS app-data directory for `io.modelshelf.desktop`.
-Development uses the same identifier: back up your database before testing migrations against valuable data.
+Release builds preserve the existing `io.modelshelf.desktop` app-data directory and credential entry.
+Debug builds default to `io.modelshelf.desktop.development`, with separate SQLite, downloads,
+WebView data and credentials. Existing production data is never migrated or copied.
+Debug builds refuse the production profile.
+
+`MODELSHELF_PROFILE` accepts `production`, `development` or `test`. Test mode requires
+`MODELSHELF_TEST_DATA_DIR` to name an existing absolute child directory of the OS temporary
+directory. Invalid combinations fail before startup. Test credentials stay in memory and
+never read or write the OS credential store. The test WebView uses the disposable directory;
+its single-instance identity is separate from production and development.
 
 ## Checks
 
@@ -61,10 +69,29 @@ Linux and macOS source portability is planned; installers and credential backend
 5. Test invalid token, gated access denial, missing drive, and insufficient disk space.
 6. Switch theme and language, restart and confirm settings persist.
 
-An optional WebView2 automation script is provided in `scripts/native-smoke.mjs`. Launch a test instance with
-`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223`, then run `node scripts/native-smoke.mjs`.
-It uses real IPC and downloads the tiny public `config.json` into the configured default directory.
-After closing/reopening that instance, run `node scripts/native-smoke.mjs --restart-check`.
-The script is intentionally opt-in: it writes real application state. Only enable remote debugging for a local test session.
+Run the isolated native automation with:
+
+```powershell
+pnpm test:native
+```
+
+This builds a debug desktop executable with bundled UI, creates a fresh temporary profile,
+launches only that instance, runs the real search/download/library flow, and restarts it to
+check persistence, Turkish and themes. The existing production app can remain open.
+The runner refuses an occupied debugging port (9223); the smoke script checks the backend's
+profile and exact temporary directory before changing any state. Downloads and screenshots
+stay inside the printed temporary directory, retained for inspection. It does not overwrite
+repository screenshots. Test credentials are intentionally not persisted across restarts.
+
+The runner enables WebView2 remote debugging only for its child process and terminates its
+own child after each check. Windows and internet access are required. Do not run the smoke
+script against an ordinary production session.
+
+## Commit and push workflow
+
+Preserve each completed, validated improvement in a focused commit and push it to
+`origin` (`https://github.com/leongrphc/modelshelf`). Update the next-steps and implementation
+status documents with actual validation results. Raise newly discovered significant work
+outside the current scope with the maintainer before expanding the task.
 
 See [implementation-status.md](implementation-status.md) for checks actually executed in this environment.

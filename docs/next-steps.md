@@ -19,11 +19,11 @@ Ayrıntılı kanıt ve sınırlamalar: [implementation-status.md](implementation
 
 ### 1. Geliştirme ve test verilerini kullanıcı verilerinden ayır
 
-- [ ] Geliştirme, otomasyon ve dağıtılan uygulama için ayrı uygulama veri dizinleri tanımla.
-- [ ] Yerel masaüstü testlerini geçici bir profil ve test indirme diziniyle çalıştır.
-- [ ] Mevcut kullanıcı veritabanını taşımadan veya üzerine yazmadan profil seçimini uygula.
+- [x] Geliştirme, otomasyon ve dağıtılan uygulama için ayrı uygulama veri dizinleri tanımla.
+- [x] Yerel masaüstü testlerini geçici bir profil ve test indirme diziniyle çalıştır.
+- [x] Mevcut kullanıcı veritabanını taşımadan veya üzerine yazmadan profil seçimini uygula.
 
-**Kabul ölçütü:** Testleri çalıştırmak gerçek kitaplığı, ayarları veya kayıtlı hesabı değiştirmemeli. Mevcut sürümde geliştirme ve normal uygulama aynı uygulama kimliğini kullanıyor.
+**Kabul ölçütü:** Testleri çalıştırmak gerçek kitaplığı, ayarları veya kayıtlı hesabı değiştirmemeli. Geliştirme ayrı veri ve hesap alanı kullanır; otomasyon geçici profilde çalışır. Dört profil testi ve gerçek masaüstü indirme/yeniden açılış akışı doğrulandı.
 
 ### 2. Windows kabul testlerini tamamla
 
@@ -99,8 +99,8 @@ Ayrıntılı kanıt ve sınırlamalar: [implementation-status.md](implementation
 ## P2 — Açık kaynak yayın hazırlığı
 
 - [ ] Gerçek GitHub depo adresini belirle; README ve Hakkında bölümüne depo, sorun bildirme ve katkı bağlantılarını ekle.
-- [ ] Bakımcı iletişimini ve özel güvenlik bildirim kanalını tanımla; GitHub özel güvenlik bildirimlerini etkinleştir.
-- [ ] Kaynakları ve kilit dosyalarını gözden geçirerek ilk Git commit'ini ve uzak depoyu hazırla; yayınlamayı ayrı bir adım olarak gerçekleştir.
+- [x] Bakımcı iletişimini ve özel güvenlik bildirim kanalını tanımla; GitHub özel güvenlik bildirimlerini etkinleştir.
+- [x] Kaynakları ve kilit dosyalarını gözden geçirerek ilk Git commit'ini ve uzak depoyu hazırla; yayınlamayı ayrı bir adım olarak gerçekleştir.
 - [ ] GitHub Actions işlerini gerçek uzak depoda çalıştır; Rust bağımlılık güvenlik taraması dahil sonuçları düzelt.
 - [ ] Kod imzalama sertifikası ve CI sırlarını bakımcı tarafından sağlandıktan sonra Windows paket imzalamayı yapılandır.
 - [ ] Sürüm notlarını, güncel gerçek ekran görüntülerini, kurulum/kaldırma talimatlarını ve paket SHA-256 özetini hazırla.
@@ -144,7 +144,7 @@ Sağlayıcı entegrasyonu değiştiğinde, internet erişimiyle:
 cargo test -p modelshelf-download --test live_hub -- --ignored --nocapture
 ```
 
-Masaüstü kabul testi için [geliştirme belgesindeki](development.md) WebView2 otomasyon talimatlarını kullan. Mevcut otomasyon gerçek uygulama durumuna yazar; profil izolasyonu tamamlanana kadar bunu test ortamında çalıştır.
+Masaüstü kabul testi için [geliştirme belgesindeki](development.md) WebView2 otomasyon talimatlarını kullan. `pnpm test:native` geçici profil oluşturur; ekran görüntüleri ve indirmeler o dizinde tutulur.
 
 Her tamamlanan işten sonra bu dosyayı ve [implementation-status.md](implementation-status.md) dosyasını güncelle. Çalıştırılmayan bir testi veya üretilmeyen bir paketi başarılı olarak işaretleme.
 
@@ -152,5 +152,13 @@ Her tamamlanan işten sonra bu dosyayı ve [implementation-status.md](implementa
 
 1. `git status --short` ile mevcut değişiklikleri kontrol et; var olan çalışmayı koru.
 2. Bu dosyayı ve uygulama durum belgesini oku.
-3. **P0 / 1: Geliştirme ve test verilerini kullanıcı verilerinden ayır** maddesinden başla.
+3. **P0 / 2: Windows kabul testlerini tamamla** maddesinden devam et; profil izolasyonu tamamlandı.
 4. İlgili kabul ölçütlerini doğrula ve sonucu belgelerde kaydet.
+
+## Yeni bulgular ve yayın durumu
+
+- Public depo: https://github.com/leongrphc/modelshelf; MVP commit: `a3c79ea`. README bağlantıları ve özel güvenlik bildirimi etkin.
+- Rust audit: `proc-macro-error 1.0.4` bakımı bırakılmış (`RUSTSEC-2024-0370`); `glib 0.18.5` iterator bellek güvenliği uyarısı (`RUSTSEC-2024-0429`). Bağımlılık zinciri ve hedef platform etkisi incelenerek yükseltme planlanmalı. Uyarılar gizlenmedi.
+- İlk CI hataları: Windows CRLF biçim kontrolü `.gitattributes` ile; audit sonucunun yazılması iş bazında `checks: write` izniyle düzeltildi. Son uzak çalışma ayrıca doğrulanmalı.
+
+Windows hedefi için `cargo tree` bu iki uyarılı paketi bağımlılık ağacında göstermedi; diğer platformlara geçmeden önce değerlendirme gerekiyor.

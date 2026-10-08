@@ -13,8 +13,9 @@ type Result<T> = std::result::Result<T, String>;
 fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
-pub fn credential() -> keyring::Result<keyring::Entry> {
-    keyring::Entry::new("io.modelshelf.desktop", "huggingface")
+#[tauri::command]
+pub fn runtime_profile(state: State<'_, AppState>) -> crate::profile::RuntimeProfile {
+    state.profile.clone()
 }
 fn hub(state: &AppState) -> Result<Hub> {
     Hub::new(state.token.lock().map_err(error)?.clone()).map_err(error)
@@ -271,8 +272,11 @@ pub async fn connect_account(state: State<'_, AppState>, token: String) -> Resul
         .await
         .map_err(error)?;
     let stored = token.clone();
+    let profile = state.profile.clone();
     blocking(move || {
-        credential()?.set_password(&stored)?;
+        if let Some(entry) = profile.credential() {
+            entry?.set_password(&stored)?;
+        }
         Ok(())
     })
     .await?;
@@ -295,9 +299,15 @@ pub async fn account_status(state: State<'_, AppState>) -> Result<Option<String>
 }
 #[tauri::command]
 pub async fn disconnect_account(state: State<'_, AppState>) -> Result<()> {
-    blocking(|| match credential()?.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(e.into()),
+    let profile = state.profile.clone();
+    blocking(move || {
+        if let Some(entry) = profile.credential() {
+            match entry?.delete_credential() {
+                Ok(()) | Err(keyring::Error::NoEntry) => {}
+                Err(e) => return Err(e.into()),
+            }
+        }
+        Ok(())
     })
     .await?;
     *state.token.lock().map_err(error)? = None;

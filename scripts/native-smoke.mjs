@@ -1,7 +1,13 @@
 // Connect to an explicitly launched local ModelShelf WebView2 test session.
 // No mocked IPC: all search/download/library state is produced by the Rust backend.
 import { chromium } from "playwright-core";
-import { mkdir } from "node:fs/promises";
+import { mkdir, realpath } from "node:fs/promises";
+import path from "node:path";
+const expectedDirectory = process.env.MODELSHELF_TEST_DATA_DIR;
+if (!expectedDirectory || process.env.MODELSHELF_PROFILE !== "test") {
+  throw new Error("Run pnpm test:native to use an isolated test profile");
+}
+const artifacts = path.join(expectedDirectory, "screenshots");
 let browser;
 for (let attempt = 0; attempt < 30; attempt++) {
   try {
@@ -22,6 +28,17 @@ for (let attempt = 0; attempt < 40; attempt++) {
   await new Promise((resolve) => setTimeout(resolve, 250));
 }
 if (!page) throw new Error("ModelShelf native webview not found");
+const profile = await page.evaluate(() =>
+  window.__TAURI_INTERNALS__.invoke("runtime_profile"),
+);
+if (
+  profile.kind !== "test" ||
+  (await realpath(profile.data_directory)) !==
+    (await realpath(expectedDirectory))
+) {
+  await browser.close();
+  throw new Error("Refusing to change a non-test or unexpected profile");
+}
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 await page.getByRole("button", { name: "Dashboard", exact: true }).click();
@@ -63,7 +80,7 @@ if (process.argv.includes("--restart-check")) {
     "Downloads, Storage, Settings, Turkish and light/dark theme passed",
   );
   await browser.close();
-  process.exit(0);
+  process.exit(errors.length ? 1 : 0);
 }
 await page
   .getByRole("button", { name: "Discover", exact: true })
@@ -74,8 +91,8 @@ await page
   .fill("openai-community/gpt2");
 await page.getByRole("button", { name: "Search", exact: true }).click();
 await page.getByRole("heading", { name: "gpt2", exact: true }).waitFor();
-await mkdir("docs/screenshots", { recursive: true });
-await page.screenshot({ path: "docs/screenshots/discover.png" });
+await mkdir(artifacts, { recursive: true });
+await page.screenshot({ path: path.join(artifacts, "discover.png") });
 await page.getByRole("heading", { name: "gpt2", exact: true }).click();
 await page.getByText("config.json", { exact: true }).first().waitFor();
 await page
@@ -83,7 +100,7 @@ await page
   .first()
   .check();
 await page.screenshot({
-  path: "docs/screenshots/repository.png",
+  path: path.join(artifacts, "repository.png"),
   mask: [page.locator(".download-summary input")],
   maskColor: "#30303e",
 });
@@ -94,6 +111,7 @@ const previousJobs = await page.evaluate(async () =>
 await page
   .getByRole("button", { name: "Download selected files", exact: true })
   .click();
+await page.getByRole("heading", { name: "Downloads", exact: true }).waitFor();
 await page.waitForFunction(
   async (previous) => {
     const current = await window.__TAURI_INTERNALS__.invoke("snapshot");
@@ -112,7 +130,7 @@ await page
   .first()
   .click();
 await page
-  .getByRole("heading", { name: "openai-community/gpt2", exact: true })
+  .getByRole("button", { name: "Details", exact: true })
   .first()
   .click();
 await page.getByRole("dialog").waitFor();
@@ -124,7 +142,7 @@ await page.getByRole("cell", { name: "Unverified", exact: true }).waitFor();
 await page.keyboard.press("Escape");
 await page.getByRole("button", { name: "Dashboard", exact: true }).click();
 await page.screenshot({
-  path: "docs/screenshots/dashboard.png",
+  path: path.join(artifacts, "dashboard.png"),
   mask: [page.locator(".stats .mono")],
   maskColor: "#30303e",
 });
