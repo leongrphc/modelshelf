@@ -34,6 +34,9 @@ jobs:
           path: target/release/bundle/nsis/*.exe
   dependencies:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: rustsec/audit-check@v2
