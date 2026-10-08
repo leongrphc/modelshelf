@@ -41,6 +41,16 @@ if (
 }
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
+if (process.argv.includes("--windows-acceptance")) {
+  try {
+    const { windowsAcceptance } = await import("./native-windows.mjs");
+    await windowsAcceptance(page);
+    if (errors.length) throw new Error(errors.join("\n"));
+  } finally {
+    await browser.close();
+  }
+  process.exit(0);
+}
 await page.getByRole("button", { name: "Dashboard", exact: true }).click();
 await page.getByRole("heading", { name: "Dashboard", exact: true }).waitFor();
 if (process.argv.includes("--restart-check")) {
@@ -112,19 +122,22 @@ await page
   .getByRole("button", { name: "Download selected files", exact: true })
   .click();
 await page.getByRole("heading", { name: "Downloads", exact: true }).waitFor();
-await page.waitForFunction(
-  async (previous) => {
-    const current = await window.__TAURI_INTERNALS__.invoke("snapshot");
-    const created = current.jobs.find((j) => !previous.includes(j.id));
-    if (created?.status === "Failed") throw new Error(created.error);
-    return (
-      created?.status === "Completed" &&
-      current.models.some((m) => m.id === created.id)
-    );
-  },
-  previousJobs,
-  { timeout: 60000 },
-);
+const downloadDeadline = Date.now() + 60000;
+let downloadCompleted = false;
+do {
+  const current = await page.evaluate(() =>
+    window.__TAURI_INTERNALS__.invoke("snapshot"),
+  );
+  const created = current.jobs.find((job) => !previousJobs.includes(job.id));
+  if (created?.status === "Failed") throw new Error(created.error);
+  downloadCompleted =
+    created?.status === "Completed" &&
+    current.models.some((model) => model.id === created.id);
+  if (downloadCompleted) break;
+  await new Promise((resolve) => setTimeout(resolve, 100));
+} while (Date.now() < downloadDeadline);
+if (!downloadCompleted)
+  throw new Error("Download did not complete within 60 seconds");
 await page
   .getByRole("button", { name: "My Library", exact: true })
   .first()

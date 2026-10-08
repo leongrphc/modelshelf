@@ -9,7 +9,7 @@ Bu dosya mevcut Windows MVP'sinden devam etmek için uygulanabilir iş sırasın
 - Tauri/Rust masaüstü uygulaması ve Windows NSIS paketi oluşturuldu.
 - Gerçek Hugging Face arama, dosya seçimi, indirme, kitaplık ve yeniden açılış akışı doğrulandı.
 - SQLite kalıcılığı, koşullu HTTP Range devam ettirme, SHA-256 kontrolü ve güvenli harici dosya indeksleme mevcut.
-- Son doğrulamada 19 Rust testi ve 6 ön yüz testi geçti. Canlı sağlayıcı testi ayrıca çalıştırıldı.
+- Son doğrulamada 27 Rust testi ve 6 ön yüz testi geçti. Canlı sağlayıcı testi ayrıca çalıştırıldı.
 - Ana arayüz İngilizce/Türkçe; açık/koyu/sistem temaları mevcut.
 - Sürüm deneysel ve imzasızdır. Geniş kapsamlı kararlı sürüm kabul testleri tamamlanmadı.
 
@@ -29,12 +29,14 @@ Ayrıntılı kanıt ve sınırlamalar: [implementation-status.md](implementation
 
 - [ ] Windows 10 ve Windows 11 x64 üzerinde temiz kurulum, açılış, kapanış ve yeniden kurulum senaryolarını çalıştır.
 - [ ] WebView2 mevcutken ve mevcut değilken kurulum davranışını doğrula.
-- [ ] Yerel dosya/klasör seçicilerini, içe aktarmayı ve kalıcı silme onayını gerçek masaüstünde dene.
-- [ ] Boşluk, Türkçe karakter ve uzun yol içeren dizinleri dene.
+- [x] Yerel dosya/klasör seçicilerini, içe aktarmayı ve kalıcı silme onayını gerçek masaüstünde dene.
+- [x] Boşluk, Türkçe karakter ve uzun yol içeren dizinleri dene.
 - [ ] Harici disk bağlantısının kesilmesi, sürücü harfinin değişmesi, yazma izni olmaması ve düşük disk alanını dene.
-- [ ] Sonuçları işletim sistemi, senaryo, beklenen sonuç ve gözlenen sonuç bilgileriyle kaydet.
+- [x] Sonuçları işletim sistemi, senaryo, beklenen sonuç ve gözlenen sonuç bilgileriyle kaydet.
 
 **Kabul ölçütü:** Hatalar anlaşılır biçimde gösterilmeli; harici dosyalar ve ilgisiz dosyalar değişmemeli. Yeniden açılışta kitaplık ve indirme geçmişi korunmalı.
+
+**Kısmi doğrulama:** Windows 11 Pro x64 build 26200 üzerinde dört dosya sistemi testi ve sekiz gerçek diyalog senaryosu geçti. Uzun yol kontrolü Rust dosya işlemleri düzeyinde; uzun yolun yerel seçiciden seçilmesi henüz denenmedi. [Ayrıntılı kabul kaydı](windows-acceptance.md). Temiz kurulum, Windows 10, WebView2 yokluğu ve fiziksel disk testleri bekliyor; P0/2 tamamlanmadı.
 
 ### 3. Büyük indirmeleri ve kurtarma sınır durumlarını doğrula
 
@@ -159,6 +161,8 @@ Her tamamlanan işten sonra bu dosyayı ve [implementation-status.md](implementa
 
 - Public depo: https://github.com/leongrphc/modelshelf; MVP commit: `a3c79ea`. README bağlantıları ve özel güvenlik bildirimi etkin.
 - Rust audit: `proc-macro-error 1.0.4` bakımı bırakılmış (`RUSTSEC-2024-0370`); `glib 0.18.5` iterator bellek güvenliği uyarısı (`RUSTSEC-2024-0429`). Bağımlılık zinciri ve hedef platform etkisi incelenerek yükseltme planlanmalı. Uyarılar gizlenmedi.
-- İlk CI hataları: Windows CRLF biçim kontrolü `.gitattributes` ile; audit sonucunun yazılması iş bazında `checks: write` izniyle düzeltildi. Son uzak çalışma ayrıca doğrulanmalı.
+- İlk CI hataları: Windows CRLF biçim kontrolü `.gitattributes` ile; audit sonucunun yazılması iş bazında `checks: write` izniyle düzeltildi. `22a4c46` için Windows paketleme ve audit dahil CI başarılı: https://github.com/leongrphc/modelshelf/actions/runs/37829673331. İki bağımlılık uyarısı ayrıca takip ediliyor.
 
 Windows hedefi için `cargo tree` bu iki uyarılı paketi bağımlılık ağacında göstermedi; diğer platformlara geçmeden önce değerlendirme gerekiyor.
+
+- Kabul testlerinde işlem sonucu bildirimi için takip ihtiyacı: silme onayında Hayır seçilmesi backend tarafından başarılı sonuç olarak dönüyor; arayüz yanıltıcı başarı bildirimi gösterebilir. Dosyalar korunuyor. İptal/başarı sonuçları ayrılmalı.

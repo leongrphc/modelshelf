@@ -69,8 +69,20 @@ with tested safety/recovery mechanisms and explicitly recorded release limitatio
 - Production data/credentials retain their existing identity; debug builds use a separate development identity. No production data migration occurs.
 - Test mode requires an explicit temporary directory, isolates WebView storage and never opens the OS credential store. Four profile tests cover defaults, invalid configurations, memory-only credentials and unchanged production/development database fixtures.
 - Native automation launches its own disposable profile, verifies runtime identity before interactions, keeps screenshots/downloads there, and restarts only its own process. Search, download, library, integrity, restart, Turkish and themes passed with no page errors while the existing production app remained open.
-- Initial CI failures exposed Windows checkout line endings and missing audit check permission; both corrected in focused commits. Full remote validation is pending.
+- Initial CI failures exposed Windows checkout line endings and missing audit check permission; both corrected in focused commits. Remote validation of `22a4c46` passed: Windows checks, NSIS packaging and dependency audit ([run](https://github.com/leongrphc/modelshelf/actions/runs/37829673331)). The two audit warnings remain visible.
 - Rust audit reported `proc-macro-error 1.0.4` unmaintained (`RUSTSEC-2024-0370`) and `glib 0.18.5` unsound iterator implementations (`RUSTSEC-2024-0429`). Warnings remain visible; dependency remediation has not been performed.
 - This follow-up does not claim a new release installer or the broader Windows acceptance matrix.
 
 Follow-up local checks: 23 Rust tests and 6 Vitest tests passed; TypeScript, ESLint, workspace clippy with warnings denied, formatting and bundled debug build passed. `cargo tree --target x86_64-pc-windows-msvc -i` found neither warned crate in the Windows dependency tree; other-platform remediation remains pending.
+
+## Follow-up: Windows acceptance automation (2026-10-08)
+
+Host: Windows 11 Pro x64 build 26200, WebView2 154.0.4258.62. See [acceptance record](windows-acceptance.md).
+
+- Four new Windows filesystem tests passed: Turkish/space paths with database reopening, >260 UTF-16-unit paths, missing/restored directory recovery, and exclusive sharing violation with safe retry.
+- Eight native dialog scenarios passed: file/folder indexing, external deletion refusal, non-destructive library removal, storage selection, picker cancellation, native No preservation and Yes deletion preserving unrelated files.
+- The automation scopes native controls to its own process and fixture directory, reports per-scenario JSON evidence, and now closes the real native window normally between stages. Download, library and settings persist across restart.
+- Windows 10/clean installation/reinstallation, missing WebView2, physical disk removal, drive-letter changes, ACL denial and low/full disk tests remain unexecuted.
+- Code inspection identified cancellation reported as successful deletion in the frontend; preservation is validated, but result messaging needs a separate fix.
+
+Final local acceptance checks: 27 workspace Rust tests passed (one separate opt-in live test ignored); targeted core clippy and workspace formatting passed. The final native runner passed all three phases with normal shutdown and all eight dialog cases. Frontend source was unchanged in this follow-up.

@@ -95,3 +95,15 @@ status documents with actual validation results. Raise newly discovered signific
 outside the current scope with the maintainer before expanding the task.
 
 See [implementation-status.md](implementation-status.md) for checks actually executed in this environment.
+
+## Windows acceptance automation
+
+`pnpm test:native` also runs eight native-dialog scenarios via a PID-scoped PowerShell helper.
+Use an interactive desktop. The helper selects only paths under the temporary test profile
+and exercises actual Windows file/folder pickers and Yes/No confirmations. The runner closes
+its own window normally between phases. `native-test.json` and `windows-acceptance.json`
+retain OS/build, scenario outcomes and errors alongside temporary screenshots.
+
+Run `cargo test -p modelshelf-core --test windows_acceptance` for Windows filesystem cases.
+These tests are also included in `cargo test --workspace` on Windows. See the
+[acceptance matrix](windows-acceptance.md) for validated and still-unexecuted scenarios.
