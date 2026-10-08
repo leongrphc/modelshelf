@@ -1,0 +1,30 @@
+[package]
+name = "modelshelf"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Local-first AI model manager"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-notification = "2"
+modelshelf-core = { path = "../../../crates/modelshelf-core" }
+modelshelf-hub = { path = "../../../crates/modelshelf-hub" }
+modelshelf-download = { path = "../../../crates/modelshelf-download" }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+rfd = "0.15"
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service"] }
+sysinfo = "0.33"
+open = "5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common"] }

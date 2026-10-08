@@ -1,0 +1,14 @@
+node_modules/
+target/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+apps/desktop/src-tauri/gen/
+*.db
+*.db-shm
+*.db-wal
+.DS_Store
+.idea/
+*.tsbuildinfo

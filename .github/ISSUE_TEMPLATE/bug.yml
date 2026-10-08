@@ -1,0 +1,23 @@
+name: Bug report
+description: Report an unexpected behavior using reproducible steps
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use disposable model files. Never include tokens or private paths.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: ModelShelf version and operating system
+    validations:
+      required: true
